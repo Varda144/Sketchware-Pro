@@ -33,10 +33,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build debug APK
-        run: gradle :app:assembleDebug --stacktrace
+        run: ./gradlew :app:assembleDebug --stacktrace
 
-      - name: Build MCP server
-        run: gradle :mcp-server:test :mcp-server:fatJar --stacktrace
+      - name: Test and package MCP server
+        run: ./gradlew :mcp-server:test :mcp-server:fatJar --stacktrace
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
