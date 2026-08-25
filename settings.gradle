@@ -10,3 +10,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "Sketchware Pro"
 include(":app")
+if (file("mcp-server/build.gradle").exists()) {
+    include(":mcp-server")
+}

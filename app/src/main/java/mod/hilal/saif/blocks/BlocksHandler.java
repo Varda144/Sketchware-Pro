@@ -15,6 +15,8 @@ import pro.sketchware.utility.ThemeUtils;
 public class BlocksHandler {
 
     public static void builtInBlocks(ArrayList<HashMap<String, Object>> arrayList) {
+        pro.sketchware.ai.blocks.AiExtraBlocks.register(arrayList);
+
         ExtraBlocks.extraBlocks(arrayList);
 
         HashMap<String, Object> hashMap = new HashMap<>();

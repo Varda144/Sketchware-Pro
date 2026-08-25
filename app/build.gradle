@@ -96,6 +96,7 @@ dependencies {
     implementation libs.bundles.shrinker
     implementation libs.zipalign.java
 
+    implementation libs.androidx.security.crypto
     implementation libs.gson
     implementation libs.scpkix.jdk15on
 
@@ -123,6 +124,9 @@ dependencies {
     implementation libs.bundles.firebase
 
     coreLibraryDesugaring libs.desugar.jdk.libs.nio
+
+    testImplementation libs.junit
+    testImplementation "org.json:json:20240303"
 }
 
 tasks.register('createMockGoogleServices') {

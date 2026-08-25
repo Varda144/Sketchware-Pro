@@ -1,0 +1,53 @@
+name: Build Debug APK
+
+on:
+  push:
+    branches:
+      - 'ai-mcp-integration'
+    paths:
+      - '.github/workflows/build-apk.yml'
+      - 'app/**'
+      - 'mcp-server/**'
+      - 'gradle/**'
+      - 'build.gradle'
+      - 'gradle.properties'
+      - 'gradlew'
+      - 'settings.gradle'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Build MCP server
+        run: gradle :mcp-server:test :mcp-server:fatJar --stacktrace
+
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sketchware-pro-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload MCP server jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sketchware-pro-mcp-server
+          path: mcp-server/build/libs/*-all.jar
+          if-no-files-found: error

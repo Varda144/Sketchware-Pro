@@ -1,0 +1,39 @@
+apply plugin: "java"
+
+group = "pro.sketchware"
+version = "1.0.0"
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "com.google.code.gson:gson:2.13.1"
+
+    testImplementation "junit:junit:4.13.2"
+}
+
+jar {
+    manifest {
+        attributes "Main-Class": "pro.sketchware.mcp.Main"
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+}
+
+tasks.register("fatJar", Jar) {
+    archiveClassifier = "all"
+    manifest { attributes "Main-Class": "pro.sketchware.mcp.Main" }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from sourceSets.main.output
+    from configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+}
+
+test {
+    useJUnit()
+}

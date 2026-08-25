@@ -1,6 +1,8 @@
 [versions]
 activity = "1.11.0"
 appcompat = "1.7.1"
+securityCrypto = "1.1.0-alpha07"
+junit = "4.13.2"
 desugar_jdk_libs_nio = "2.1.5"
 firebaseBom = "34.3.0"
 sora-editor = "0.23.5"
@@ -48,6 +50,7 @@ androidx-cardview = { module = "androidx.cardview:cardview", version.ref = "card
 androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
 androidx-preference = { module = "androidx.preference:preference", version.ref = "preference" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 androidx-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 androidx-viewpager = { module = "androidx.viewpager:viewpager", version.ref = "viewpager" }
@@ -107,6 +110,7 @@ stax-api = { module = "javax.xml.stream:stax-api", version.ref = "staxApi" }
 
 woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version.ref = "woodstoxCore" }
 
+junit = { module = "junit:junit", version.ref = "junit" }
 zipalign-java = { module = "com.github.Iyxan23:zipalign-java", version.ref = "zipalignJava" }
 
 [bundles]

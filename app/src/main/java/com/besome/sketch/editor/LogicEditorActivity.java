@@ -77,12 +77,15 @@ import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
+
+import pro.sketchware.utility.SketchwareUtil;
 
 import a.a.a.DB;
 import a.a.a.FB;
@@ -188,6 +191,87 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             }
         }
         return xmlFileNames;
+    }
+
+    private void showGenerateFromTextDialog() {
+        String hint = "activity: " + M.getJavaName() + ", event: " + eventName;
+        pro.sketchware.ai.dialog.AiGenerateDialog.show(this, hint, plan ->
+                insertGeneratedPlan(plan));
+    }
+
+    /**
+     * Converts an AI-generated plan into real {@link BlockBean}s and appends
+     * the resulting chain(s) to the current pane, then persists the pane.
+     */
+    private void insertGeneratedPlan(pro.sketchware.ai.nl.INLToBlocksConverter.NLPlan plan) {
+        ArrayList<pro.sketchware.ai.nl.INLToBlocksConverter.NLBlock> all = new ArrayList<>();
+        for (pro.sketchware.ai.nl.INLToBlocksConverter.NLEvent ev : plan.events) {
+            all.addAll(ev.blocks);
+        }
+        pro.sketchware.ai.nl.NLPlanToBlocks.Mapped mapped =
+                pro.sketchware.ai.nl.NLPlanToBlocks.map(all, o.g + 1);
+        if (mapped.beans.isEmpty()) {
+            SketchwareUtil.toastError("The AI produced no blocks for this event.");
+            return;
+        }
+        HashMap<Integer, Rs> byId = new HashMap<>();
+        HashSet<Integer> referenced = new HashSet<>();
+        for (BlockBean bean : mapped.beans) {
+            if (bean.nextBlock >= 0) referenced.add(bean.nextBlock);
+            if (bean.subStack1 >= 0) referenced.add(bean.subStack1);
+            if (bean.subStack2 >= 0) referenced.add(bean.subStack2);
+        }
+        ArrayList<Rs> roots = new ArrayList<>();
+        for (BlockBean bean : mapped.beans) {
+            Rs view = b(bean);
+            int tag = Integer.parseInt(bean.id);
+            view.setTag(tag);
+            byId.put(tag, view);
+            o.g = Math.max(o.g, tag + 1);
+        }
+        for (BlockBean bean : mapped.beans) {
+            Rs block = byId.get(Integer.parseInt(bean.id));
+            runOnUiThread(() -> o.a(block, 0, 0));
+            block.setOnTouchListener(this);
+            int idInt = Integer.parseInt(bean.id);
+            if (!referenced.contains(idInt)) {
+                roots.add(block);
+            }
+            if (bean.nextBlock >= 0) {
+                block.b(byId.get(bean.nextBlock));
+            }
+            if (bean.subStack1 >= 0) {
+                Rs sub = byId.get(bean.subStack1);
+                if (sub != null) block.e(sub);
+            }
+            if (bean.subStack2 >= 0) {
+                Rs sub = byId.get(bean.subStack2);
+                if (sub != null) block.f(sub);
+            }
+            for (int i = 0; i < bean.parameters.size(); i++) {
+                String parameter = bean.parameters.get(i);
+                if (parameter != null && !parameter.isEmpty() && parameter.charAt(0) != '@'
+                        && i < block.V.size() && (block.V.get(i) instanceof Ss)) {
+                    ((Ss) block.V.get(i)).setArgValue(parameter);
+                    block.m();
+                }
+            }
+        }
+        final Rs head = roots.isEmpty() ? null : roots.get(0);
+        if (head != null) {
+            for (int i = 0; i < roots.size(); i++) {
+                if (i + 1 < roots.size()) {
+                    roots.get(i).b(roots.get(i + 1));
+                }
+            }
+            runOnUiThread(() -> o.getRoot().b(head));
+        }
+        runOnUiThread(() -> {
+            o.getRoot().k();
+            o.b();
+        });
+        E();
+        invalidateOptionsMenu();
     }
 
     private void loadEventBlocks() {
@@ -1971,7 +2055,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     public boolean onOptionsItemSelected(@NonNull MenuItem menuItem) {
         int itemId = menuItem.getItemId();
 
-        if (itemId == R.id.menu_block_helper) {
+        if (itemId == R.id.menu_logic_generate) {
+            showGenerateFromTextDialog();
+        } else if (itemId == R.id.menu_block_helper) {
             e(false);
             g(!ia);
         } else if (itemId == R.id.menu_logic_redo) {
