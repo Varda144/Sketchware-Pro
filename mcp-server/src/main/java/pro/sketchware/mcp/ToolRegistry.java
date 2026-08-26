@@ -363,6 +363,10 @@ public final class ToolRegistry {
         return a.has(key) && a.get(key).isJsonPrimitive() ? a.get(key).getAsString() : "";
     }
 
+    private static JsonObject ok(String key, String value) {
+        return ok(key, new com.google.gson.JsonPrimitive(value));
+    }
+
     private static JsonObject ok(String key, com.google.gson.JsonElement value) {
         JsonObject o = new JsonObject();
         o.addProperty("ok", true);
