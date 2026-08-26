@@ -21,13 +21,13 @@ public class BlockPlanCatalogTest {
     }
 
     @Test
-    public void wrongVersionRejected() {
+    public void wrongVersionRejected() throws IOException {
         JsonObject plan = JsonRpc.parseObject("{\"version\":2,\"events\":[]}");
         assertThrows(IOException.class, () -> BlockPlanCatalog.validate(plan));
     }
 
     @Test
-    public void unsupportedOpRejected() {
+    public void unsupportedOpRejected() throws IOException {
         JsonObject plan = JsonRpc.parseObject("""
                 {"version":1,"events":[{"activity":"A","event":"onClick",
                 "blocks":[{"op":"launchMissiles"}]}]}""");
@@ -37,7 +37,7 @@ public class BlockPlanCatalogTest {
     }
 
     @Test
-    public void emptyEventsRejected() {
+    public void emptyEventsRejected() throws IOException {
         JsonObject plan = JsonRpc.parseObject("{\"version\":1,\"events\":[]}");
         assertThrows(IOException.class, () -> BlockPlanCatalog.validate(plan));
     }
