@@ -1,4 +1,4 @@
-package pro.sketchware.ai.provider;
+package pro.sketchware.ai.secure;
 
 import android.content.Context;
 import android.content.SharedPreferences;

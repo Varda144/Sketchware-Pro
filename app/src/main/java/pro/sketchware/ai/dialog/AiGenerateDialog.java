@@ -3,7 +3,6 @@ package pro.sketchware.ai.dialog;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
@@ -60,7 +59,7 @@ public final class AiGenerateDialog {
                 .setView(container)
                 .setNegativeButton("Cancel", null);
 
-        android.app.AlertDialog dialog = builder.create();
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
 
         dialog.setOnShowListener(d -> {
             try {
