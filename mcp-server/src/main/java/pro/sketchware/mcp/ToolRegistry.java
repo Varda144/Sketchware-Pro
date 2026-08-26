@@ -276,7 +276,7 @@ public final class ToolRegistry {
         Path0 dir = new Path0(ws.resolve(require(a, "directory")));
         String name = a.has("name") ? string(a, "name") : ("snap-" + System.currentTimeMillis());
         Path0 target = new Path0(ws.snapshotDir().resolve(name).toAbsolutePath().normalize());
-        if (!target.value.startsWith(ws.snapshotDir.toAbsolutePath().normalize().toString())) {
+        if (!target.value.startsWith(ws.snapshotDir().toAbsolutePath().normalize().toString())) {
             throw new IOException("Bad snapshot name");
         }
         try (var walk = Files.walk(dir.value)) {
