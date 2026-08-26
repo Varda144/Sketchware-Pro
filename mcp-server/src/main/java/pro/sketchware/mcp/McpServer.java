@@ -54,7 +54,7 @@ public final class McpServer {
         if (token != null && !token.isBlank()) {
             String auth = ex.getRequestHeaders().getFirst("Authorization");
             if (auth == null || !auth.equals("Bearer " + token)) {
-                send(ex, 401, JsonRpc.error(null, -32001, "Unauthorized"));
+                send(ex, 401, JsonRpc.error(null, -32001, "Unauthorized").toString());
                 return;
             }
         }

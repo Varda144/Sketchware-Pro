@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -80,7 +81,7 @@ public final class ToolRegistry {
                 "{\"projectId\":\"<sc_id>\"}",
                 (ws, a) -> {
                     Path0 p = projectConfig(ws, a);
-                    JsonObject obj = JsonRpc.parseObject(ws.readFile(p.value));
+                    JsonObject obj = JsonRpc.parseObject(Files.readString(p.value));
                     return ok("config", obj);
                 });
 
@@ -274,7 +275,7 @@ public final class ToolRegistry {
         ws.requireWrite();
         Path0 dir = new Path0(ws.resolve(require(a, "directory")));
         String name = a.has("name") ? string(a, "name") : ("snap-" + System.currentTimeMillis());
-        Path0 target = new Path0(ws.snapshotDir.resolve(name).toAbsolutePath().normalize());
+        Path0 target = new Path0(ws.snapshotDir().resolve(name).toAbsolutePath().normalize());
         if (!target.value.startsWith(ws.snapshotDir.toAbsolutePath().normalize().toString())) {
             throw new IOException("Bad snapshot name");
         }
@@ -300,7 +301,7 @@ public final class ToolRegistry {
     private static JsonObject restoreSnapshot(Workspace ws, JsonObject a) throws IOException {
         ws.requireDestructive();
         String name = require(a, "name");
-        Path0 snap = new Path0(ws.snapshotDir.resolve(name).toAbsolutePath().normalize());
+        Path0 snap = new Path0(ws.snapshotDir().resolve(name).toAbsolutePath().normalize());
         if (!Files.exists(snap.value)) {
             throw new IOException("No such snapshot: " + name);
         }
