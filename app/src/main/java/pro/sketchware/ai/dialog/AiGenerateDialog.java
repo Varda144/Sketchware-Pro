@@ -60,7 +60,7 @@ public final class AiGenerateDialog {
                 .setView(container)
                 .setNegativeButton("Cancel", null);
 
-        Dialog dialog = builder.create();
+        android.app.AlertDialog dialog = builder.create();
 
         dialog.setOnShowListener(d -> {
             try {
@@ -88,7 +88,7 @@ public final class AiGenerateDialog {
                 status.setVisibility(View.VISIBLE);
                 status.setText("Generating blocks…");
 
-                new GeminiNLToBlocksAdapter(activity).convert(instruction, contextHint,
+                new pro.sketchware.ai.nl.GeminiNLToBlocksConverter(activity.getApplicationContext()).convert(instruction, contextHint,
                         new INLToBlocksConverter.Result() {
                             @Override
                             public void onSuccess(@NonNull INLToBlocksConverter.NLPlan plan) {
@@ -113,10 +113,4 @@ public final class AiGenerateDialog {
         dialog.show();
     }
 
-    /** Thin wrapper exposing the converter without leaking its constructor. */
-    private static final class GeminiNLToBlocksAdapter extends pro.sketchware.ai.nl.GeminiNLToBlocksConverter {
-        GeminiNLToBlocksAdapter(@NonNull Activity activity) {
-            super(activity.getApplicationContext());
-        }
-    }
 }

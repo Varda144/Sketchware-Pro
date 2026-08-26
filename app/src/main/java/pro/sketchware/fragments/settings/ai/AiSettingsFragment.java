@@ -61,7 +61,7 @@ public class AiSettingsFragment extends qA {
                     | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(left + insets.left, top + insets.top,
                     right + insets.right, bottom + insets.bottom);
-            return v;
+            return i;
         });
         View appBar = binding.appBarLayout;
         int aL = appBar.getPaddingLeft();
@@ -72,7 +72,7 @@ public class AiSettingsFragment extends qA {
             Insets insets = i.getInsets(WindowInsetsCompat.Type.systemBars()
                     | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(aL + insets.left, aT + insets.top, aR + insets.right, aB);
-            return v;
+            return i;
         });
     }
 

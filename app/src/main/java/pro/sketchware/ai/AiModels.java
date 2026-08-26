@@ -57,7 +57,7 @@ public final class AiModels {
         /** Convenience factory for a single-turn prompt. */
         public static GenerateRequest singlePrompt(@Nullable String prompt) {
             List<Message> msgs = new ArrayList<>();
-            msgs.add(new Message(Role.USER, prompt == null ? "" : prompt));
+            msgs.add(new Message(Message.Role.USER, prompt == null ? "" : prompt));
             return new GenerateRequest(msgs);
         }
     }

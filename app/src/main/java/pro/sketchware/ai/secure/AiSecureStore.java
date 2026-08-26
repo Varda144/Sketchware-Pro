@@ -40,7 +40,7 @@ public final class AiSecureStore {
             MasterKey masterKey = new MasterKey.Builder(context)
                     .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
                     .build();
-            p = new EncryptedSharedPreferences.create(
+            p = EncryptedSharedPreferences.create(
                     context,
                     PREFS_NAME,
                     masterKey,

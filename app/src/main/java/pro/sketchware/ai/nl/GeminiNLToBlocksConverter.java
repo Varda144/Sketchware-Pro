@@ -9,7 +9,7 @@ import org.json.JSONObject;
 
 import pro.sketchware.ai.AiModels;
 import pro.sketchware.ai.GeminiApiService;
-import pro.sketchware.ai.provider.AiProviderRegistry;
+import pro.sketchware.ai.AiProviderRegistry;
 import pro.sketchware.ai.secure.AiSecureStore;
 
 /**
