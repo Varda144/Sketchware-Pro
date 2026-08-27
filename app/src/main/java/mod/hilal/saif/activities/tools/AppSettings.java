@@ -108,6 +108,7 @@ public class AppSettings extends BaseAppCompatActivity {
         preferences.add(generalCategory);
 
         generalCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_settings_applications, "App settings", "Change general app settings", new ActivityLauncher(new Intent(getApplicationContext(), ConfigActivity.class))), true);
+        generalCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_settings_applications, "AI Provider & MCP", "Chat with AI models and enable the full-access MCP server for agents", new ActivityLauncher(new Intent(getApplicationContext(), mod.varda.ai.AiChatActivity.class))), true);
         generalCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_palette, Helper.getResString(R.string.settings_appearance), Helper.getResString(R.string.settings_appearance_description), openSettingsActivity(SettingsActivity.SETTINGS_APPEARANCE_FRAGMENT)), true);
         generalCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_folder, "Open working directory", "Open Sketchware Pro's directory and edit files in it", v -> openWorkingDirectory()), true);
         generalCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_apk_document, "Sign an APK file with testkey", "Sign an already existing APK file with testkey and signature schemes up to V4", v -> signApkFileDialog()), true);
