@@ -166,6 +166,10 @@ tasks.register('createMockGoogleServices') {
 }"""
             mockFile.text = mockContent
         }
+        def rootMock = file("google-services.json")
+        if (!rootMock.exists()) {
+            rootMock.text = mockFile.text
+        }
     }
 }
 
