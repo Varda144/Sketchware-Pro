@@ -13,6 +13,10 @@ public class AiProviderConfig {
 
     public static final String DEFAULT_ENDPOINT = "https://api.openai.com/v1/chat/completions";
     public static final String DEFAULT_MODEL = "gpt-4o-mini";
+
+    public static final String PROVIDER_OPENAI = "openai";
+    public static final String PROVIDER_ANTHROPIC = "anthropic";
+    public static final String PROVIDER_GEMINI = "gemini";
     public static final String DEFAULT_SYSTEM_PROMPT =
             "You are an expert Android developer assistant embedded in Sketchware Pro IDE.\n"
             + "You help users build complete Android apps — frontend (XML layouts, Views, Activities) "
@@ -62,6 +66,27 @@ public class AiProviderConfig {
         prefs(c).edit().putString("system_prompt", v == null ? "" : v).apply();
     }
 
+    public static String getProvider(Context c) {
+        return prefs(c).getString("provider", PROVIDER_OPENAI);
+    }
+    public static void setProvider(Context c, String v) {
+        prefs(c).edit().putString("provider", v == null ? PROVIDER_OPENAI : v.trim()).apply();
+    }
+
+    public static String getVisionModel(Context c) {
+        return prefs(c).getString("vision_model", "");
+    }
+    public static void setVisionModel(Context c, String v) {
+        prefs(c).edit().putString("vision_model", v == null ? "" : v.trim()).apply();
+    }
+
+    public static float getTemperature(Context c) {
+        return prefs(c).getFloat("temperature", 0.7f);
+    }
+    public static void setTemperature(Context c, float v) {
+        prefs(c).edit().putFloat("temperature", v).apply();
+    }
+
     public static boolean isMcpEnabled(Context c) {
         return prefs(c).getBoolean("mcp_enabled", false);
     }
@@ -82,6 +107,22 @@ public class AiProviderConfig {
     }
     public static void setMcpToken(Context c, String v) {
         prefs(c).edit().putString("mcp_token", v == null ? "" : v.trim()).apply();
+    }
+
+    /**
+     * Whether the MCP server should bind to all network interfaces (0.0.0.0).
+     * Default is false -> bind to 127.0.0.1 only (safe; reach via `adb forward`).
+     * Only enable on an explicitly trusted network, and always set an MCP token.
+     */
+    public static boolean isMcpBindNetwork(Context c) {
+        return prefs(c).getBoolean("mcp_bind_network", false);
+    }
+    public static void setMcpBindNetwork(Context c, boolean v) {
+        prefs(c).edit().putBoolean("mcp_bind_network", v).apply();
+    }
+
+    public static String getMcpHost(Context c) {
+        return isMcpBindNetwork(c) ? "0.0.0.0" : "127.0.0.1";
     }
 
     public static int getMaxHistory(Context c) {

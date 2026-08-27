@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Environment;
 import android.text.InputType;
 import android.text.method.ScrollingMovementMethod;
 import android.view.Gravity;
@@ -82,6 +83,11 @@ public class AiChatActivity extends Activity {
         streamButton.setTextSize(12);
         streamButton.setOnClickListener(v -> { isStreaming = !isStreaming; streamButton.setText(isStreaming ? "Stream ON" : "Stream"); });
         btns.addView(streamButton, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        Button visionButton = new Button(this);
+        visionButton.setText("Vision");
+        visionButton.setTextSize(12);
+        visionButton.setOnClickListener(v -> sendVision());
+        btns.addView(visionButton, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         root.addView(btns);
 
         historyScroll = new ScrollView(this);
@@ -125,7 +131,8 @@ public class AiChatActivity extends Activity {
         sb.append(" | ").append(isStreaming ? "Stream" : "Sync").append("\n");
         if (McpServer.isRunning()) {
             String tok = AiProviderConfig.getMcpToken(this).isEmpty() ? "open" : "token";
-            sb.append("MCP: http://").append(localIp()).append(":").append(AiProviderConfig.getMcpPort(this)).append("/mcp (").append(tok).append(")");
+            String scope = AiProviderConfig.isMcpBindNetwork(this) ? localIp() : "127.0.0.1";
+            sb.append("MCP: http://").append(scope).append(":").append(AiProviderConfig.getMcpPort(this)).append("/mcp (").append(tok).append(AiProviderConfig.isMcpBindNetwork(this) ? ", LAN" : ", local").append(")");
         } else sb.append("MCP: stopped");
         statusView.setText(sb.toString());
     }
@@ -149,10 +156,27 @@ public class AiChatActivity extends Activity {
     }
 
     private void sendMessage() {
-        String prompt = inputView.getText().toString().trim();
-        if (prompt.isEmpty()) return;
+        String raw = inputView.getText().toString().trim();
+        if (raw.isEmpty()) return;
         inputView.setText("");
-        appendHistory("You", prompt);
+        if (raw.startsWith("/")) { handleSlash(raw); return; }
+        appendHistory("You", raw);
+        sendChat(raw);
+    }
+
+    private void handleSlash(String raw) {
+        if ("/reset".equals(raw)) { history.clear(); historyView.setText("History cleared.\n"); return; }
+        String transformed;
+        if (raw.startsWith("/build ")) transformed = "Build this feature in the current project: " + raw.substring(7).trim()
+                + ". Provide the view XML layout, the event handler code, required components, and any custom Java/Kotlin code.";
+        else if (raw.startsWith("/fix ")) transformed = "Fix this error:\n" + raw.substring(5).trim() + "\nProvide the corrected, compilable code.";
+        else if ("/explain".equals(raw) || raw.startsWith("/explain ")) transformed = "Explain the structure and code of the current project.";
+        else { appendLine("AI", "Unknown command: " + raw + "\nAvailable: /build, /fix, /explain, /reset"); return; }
+        appendHistory("You", raw);
+        sendChat(transformed);
+    }
+
+    private void sendChat(String prompt) {
         setBusy(true);
         List<String[]> snap = new ArrayList<>(history);
         int start = Math.max(0, snap.size() - AiProviderConfig.getMaxHistory(this));
@@ -174,6 +198,29 @@ public class AiChatActivity extends Activity {
         }
     }
 
+    private void sendVision() {
+        String prompt = inputView.getText().toString().trim();
+        if (prompt.isEmpty()) prompt = "Describe what is on the screen and suggest UI/UX improvements.";
+        inputView.setText("");
+        appendHistory("You", "[vision] " + prompt);
+        setBusy(true);
+        String imgPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/mcp_screen.png";
+        try { Runtime.getRuntime().exec(new String[]{"sh", "-c", "screencap -p " + imgPath}).waitFor(); }
+        catch (Exception ignored) {}
+        String finalPrompt = prompt;
+        new Thread(() -> {
+            try {
+                String b64 = AiProvider.fileToBase64(imgPath);
+                String ans = AiProvider.chatVisionBlocking(AiChatActivity.this, null, finalPrompt, b64, "image/png");
+                String finalAns = ans;
+                runOnUiThread(() -> { setBusy(false); appendHistory("AI", finalAns); });
+            } catch (Exception e) {
+                String err = e.getMessage();
+                runOnUiThread(() -> { setBusy(false); appendLine("ERROR", err); });
+            }
+        }).start();
+    }
+
     private void setBusy(boolean b) { inputView.setEnabled(!b); sendButton.setEnabled(!b); sendButton.setText(b ? "Thinking..." : "Send"); }
     private void appendHistory(String who, String t) { historyView.append("\n" + who + ": " + t + "\n"); history.add(new String[]{who.equals("You") ? "user" : "assistant", t}); }
     private void appendLine(String who, String t) { historyView.append(who + ": " + t + "\n\n"); }
@@ -186,8 +233,15 @@ public class AiChatActivity extends Activity {
         EditText ep = field("Endpoint URL", AiProviderConfig.getEndpoint(this), false); box.addView(ep);
         EditText ak = field("API key", AiProviderConfig.getApiKey(this), true); box.addView(ak);
         EditText md = field("Model (e.g. gpt-4o-mini)", AiProviderConfig.getModel(this), false); box.addView(md);
+        EditText pv = field("Provider (openai/anthropic/gemini)", AiProviderConfig.getProvider(this), false); box.addView(pv);
+        EditText vm = field("Vision model (optional)", AiProviderConfig.getVisionModel(this), false); box.addView(vm);
+        EditText tp = field("Temperature (0.0 - 2.0)", String.valueOf(AiProviderConfig.getTemperature(this)), false); box.addView(tp);
         EditText pp = field("MCP port", String.valueOf(AiProviderConfig.getMcpPort(this)), false); pp.setInputType(InputType.TYPE_CLASS_NUMBER); box.addView(pp);
-        EditText tk = field("MCP token (empty=open)", AiProviderConfig.getMcpToken(this), false); box.addView(tk);
+        EditText tk = field("MCP token (empty=open on localhost only)", AiProviderConfig.getMcpToken(this), false); box.addView(tk);
+        android.widget.CheckBox netCb = new android.widget.CheckBox(this);
+        netCb.setText("Bind to network (0.0.0.0 / LAN) — requires a token");
+        netCb.setChecked(AiProviderConfig.isMcpBindNetwork(this));
+        box.addView(netCb);
         EditText sp = field("System prompt", AiProviderConfig.getSystemPrompt(this), false); box.addView(sp);
 
         new AlertDialog.Builder(this).setTitle("Provider & MCP Settings").setView(box)
@@ -195,7 +249,11 @@ public class AiChatActivity extends Activity {
                     AiProviderConfig.setEndpoint(this, ep.getText().toString().trim());
                     AiProviderConfig.setApiKey(this, ak.getText().toString());
                     AiProviderConfig.setModel(this, md.getText().toString());
+                    AiProviderConfig.setProvider(this, pv.getText().toString().trim());
+                    AiProviderConfig.setVisionModel(this, vm.getText().toString().trim());
+                    try { AiProviderConfig.setTemperature(this, Float.parseFloat(tp.getText().toString().trim())); } catch (NumberFormatException ignored) {}
                     AiProviderConfig.setMcpToken(this, tk.getText().toString());
+                    AiProviderConfig.setMcpBindNetwork(this, netCb.isChecked());
                     AiProviderConfig.setSystemPrompt(this, sp.getText().toString());
                     try { AiProviderConfig.setMcpPort(this, Integer.parseInt(pp.getText().toString().trim())); } catch (NumberFormatException ignored) {}
                     if (McpServer.isRunning()) { McpServer.stop(); McpServer.start(this); }

@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLDecoder;
@@ -64,7 +65,8 @@ public class McpServer {
             instance = new McpServer();
             instance.appContext = ctx.getApplicationContext();
             int port = AiProviderConfig.getMcpPort(instance.appContext);
-            instance.serverSocket = new ServerSocket(port, 64);
+            String host = AiProviderConfig.getMcpHost(instance.appContext);
+            instance.serverSocket = new ServerSocket(port, 64, InetAddress.getByName(host));
             instance.pool = Executors.newCachedThreadPool();
             instance.acceptThread = new Thread(instance::acceptLoop, "varda-mcp-accept");
             instance.acceptThread.setDaemon(true);
@@ -133,6 +135,10 @@ public class McpServer {
             }
             int len = 0;
             try { len = Integer.parseInt(headers.getOrDefault("content-length", "0")); } catch (NumberFormatException ignored) {}
+            if (len > 8 * 1024 * 1024) {
+                respond(sock, 413, "{\"error\":\"payload too large (max 8MB)\"}", "application/json");
+                return;
+            }
             byte[] bodyBytes = new byte[0];
             if (len > 0) {
                 bodyBytes = new byte[len];
@@ -153,7 +159,7 @@ public class McpServer {
                 o.addProperty("status", "ok");
                 o.addProperty("server", "sketchware-pro-mcp");
                 o.addProperty("mcp_running", isRunning());
-                o.addProperty("tools_count", 25);
+                o.addProperty("tools_count", buildToolList().size());
                 respond(sock, 200, o.toString(), "application/json");
                 return;
             }
@@ -180,7 +186,13 @@ public class McpServer {
 
     private boolean authorized(java.util.Map<String, String> headers, String query) {
         String token = AiProviderConfig.getMcpToken(appContext);
-        if (token.isEmpty()) return true;
+        String host = AiProviderConfig.getMcpHost(appContext);
+        boolean networkExposed = "0.0.0.0".equals(host);
+        if (token.isEmpty()) {
+            // No token configured: only allow when bound to localhost.
+            // A network-exposed (0.0.0.0) server with no token would be LAN-wide RCE.
+            return !networkExposed;
+        }
         String given = headers.get("x-mcp-token");
         if (given != null && token.equals(given)) return true;
         if (given == null && query != null) {
@@ -245,6 +257,8 @@ public class McpServer {
                     result.addProperty("protocolVersion", PROTOCOL_VERSION);
                     JsonObject caps = new JsonObject();
                     caps.add("tools", new JsonObject());
+                    caps.add("resources", new JsonObject());
+                    caps.add("prompts", new JsonObject());
                     result.add("capabilities", caps);
                     JsonObject info = new JsonObject();
                     info.addProperty("name", "sketchware-pro-mcp");
@@ -259,6 +273,19 @@ public class McpServer {
                 }
                 case "ping": break;
                 case "tools/list": result.add("tools", buildToolList()); break;
+                case "resources/list": result.add("resources", buildResourceList()); break;
+                case "resources/read": {
+                    JsonObject params = req.has("params") ? req.getAsJsonObject("params") : new JsonObject();
+                    String uri = params.has("uri") ? params.get("uri").getAsString() : "";
+                    result.add("contents", readResource(uri));
+                    break;
+                }
+                case "prompts/list": result.add("prompts", buildPromptList()); break;
+                case "prompts/get": {
+                    JsonObject params = req.has("params") ? req.getAsJsonObject("params") : new JsonObject();
+                    result.add("messages", getPromptMessages(params));
+                    break;
+                }
                 case "tools/call": {
                     JsonObject params = req.has("params") ? req.getAsJsonObject("params") : new JsonObject();
                     String name = params.has("name") ? params.get("name").getAsString() : "";
@@ -371,6 +398,16 @@ public class McpServer {
                 "{\"ad_type\":{\"type\":\"string\",\"description\":\"Ad type: interstitial, rewarded, banner\"},\"ad_unit_id\":{\"type\":\"string\",\"description\":\"Ad unit ID (use test ID if empty)\"}}"));
         tools.add(tool("diagnose_error", "Diagnose a compilation or runtime error and suggest fixes",
                 "{\"error_message\":{\"type\":\"string\",\"description\":\"The error message or stack trace\"},\"sc_id\":{\"type\":\"string\",\"description\":\"Project sc_id for context\"}}"));
+        tools.add(tool("capture_screen", "Capture a screenshot of the device (saved to storage root as mcp_screen.png)",
+                null));
+        tools.add(tool("ai_vision", "Send a screenshot/image to a vision-capable model and ask about it",
+                "{\"prompt\":{\"type\":\"string\",\"description\":\"What to ask about the image\"},\"image_path\":{\"type\":\"string\",\"description\":\"Optional image path; if omitted, a fresh screenshot is captured\"}}"));
+        tools.add(tool("apply_custom_code", "Write/append custom Java/Kotlin code into a project so it actually compiles into the app",
+                "{\"sc_id\":{\"type\":\"string\"},\"language\":{\"type\":\"string\",\"description\":\"java or kotlin\"},\"code\":{\"type\":\"string\",\"description\":\"Code to write\"},\"append\":{\"type\":\"boolean\",\"description\":\"Append instead of overwrite (default false)\"}}"));
+        tools.add(tool("create_project", "Create a new Sketchware Pro project skeleton (folders + project.properties)",
+                "{\"sc_id\":{\"type\":\"string\"},\"name\":{\"type\":\"string\",\"description\":\"Project display name\"}}"));
+        tools.add(tool("search_project", "Search project data files for a substring (grep)",
+                "{\"sc_id\":{\"type\":\"string\"},\"query\":{\"type\":\"string\"}}"));
         return tools;
     }
 
@@ -416,6 +453,11 @@ public class McpServer {
             case "generate_component_code": return generateComponentCode(args);
             case "generate_ad_integration": return generateAdIntegration(args);
             case "diagnose_error": return diagnoseError(args);
+            case "capture_screen": return captureScreen();
+            case "ai_vision": return aiVision(args);
+            case "apply_custom_code": return applyCustomCode(args);
+            case "create_project": return createProject(args);
+            case "search_project": return searchProject(args);
             default: throw new IllegalStateException("Unknown tool: " + name);
         }
     }
@@ -780,6 +822,200 @@ public class McpServer {
                 + "3. Prevention tips for future";
         try { return AiProvider.chatBlocking(appContext, null, prompt); }
         catch (Exception e) { return "AI ERROR: " + e.getMessage(); }
+    }
+
+    // ---------- Agent / vision / project tools ----------
+
+    private String exec(String cmd) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("sh", "-c", cmd);
+            pb.redirectErrorStream(true);
+            Process p = pb.start();
+            StringBuilder sb = new StringBuilder();
+            BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
+            char[] buf = new char[8192];
+            int n;
+            while ((n = br.read(buf)) > 0) sb.append(buf, 0, n);
+            br.close();
+            p.waitFor(60, TimeUnit.SECONDS);
+            return sb.toString();
+        } catch (Exception e) {
+            return "EXEC ERROR: " + e.getMessage();
+        }
+    }
+
+    private String captureScreen() {
+        String out = Environment.getExternalStorageDirectory().getAbsolutePath() + "/mcp_screen.png";
+        String r = exec("screencap -p " + out);
+        return (r.isEmpty() ? "" : r + "\n") + "Saved screenshot: " + out;
+    }
+
+    private String aiVision(JsonObject args) throws Exception {
+        String prompt = reqStr(args, "prompt");
+        String imgPath = args.has("image_path") ? reqStr(args, "image_path") : "";
+        if (imgPath.isEmpty()) {
+            imgPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/mcp_screen.png";
+            exec("screencap -p " + imgPath);
+        }
+        String b64 = AiProvider.fileToBase64(imgPath);
+        return AiProvider.chatVisionBlocking(appContext, null, prompt, b64, "image/png");
+    }
+
+    private String applyCustomCode(JsonObject args) throws Exception {
+        String scId = reqStr(args, "sc_id");
+        String lang = reqStr(args, "language");
+        String code = reqStr(args, "code");
+        boolean append = args.has("append") && args.get("append").getAsBoolean();
+        File f = new File(Environment.getExternalStorageDirectory(), ".sketchware/data/" + scId + "/" + lang);
+        if (append && f.exists()) {
+            code = readTextFile(f) + "\n\n" + code;
+        }
+        File parent = f.getParentFile();
+        if (parent != null && !parent.exists()) parent.mkdirs();
+        FileOutputStream fos = new FileOutputStream(f);
+        fos.write(code.getBytes(StandardCharsets.UTF_8));
+        fos.close();
+        return "Applied " + lang + " custom code to project " + scId + (append ? " (appended)" : " (overwritten)");
+    }
+
+    private String createProject(JsonObject args) throws Exception {
+        String scId = reqStr(args, "sc_id");
+        String name = args.has("name") ? reqStr(args, "name") : scId;
+        File listDir = new File(Environment.getExternalStorageDirectory(), ".sketchware/mysc/list/" + scId);
+        File dataDir = new File(Environment.getExternalStorageDirectory(), ".sketchware/data/" + scId);
+        if (!listDir.mkdirs()) return "Failed to create list directory for " + scId;
+        dataDir.mkdirs();
+        File props = new File(listDir, "project.properties");
+        FileOutputStream fos = new FileOutputStream(props);
+        fos.write(("name=" + name + "\nsc_id=" + scId + "\n").getBytes(StandardCharsets.UTF_8));
+        fos.close();
+        for (String sub : new String[]{"view", "events", "components", "files/resource", "files/assets", "files/native_libs", "java", "kotlin"}) {
+            new File(dataDir, sub).mkdirs();
+        }
+        return "Created project skeleton: " + scId + " (" + name + ")";
+    }
+
+    private String searchProject(JsonObject args) {
+        String scId = reqStr(args, "sc_id");
+        String q = reqStr(args, "query");
+        File dir = new File(Environment.getExternalStorageDirectory(), ".sketchware/data/" + scId);
+        StringBuilder sb = new StringBuilder();
+        searchRec(dir, q, sb, 0);
+        return sb.length() == 0 ? "No matches for: " + q : sb.toString();
+    }
+
+    private void searchRec(File dir, String q, StringBuilder sb, int depth) {
+        if (depth > 8 || !dir.isDirectory()) return;
+        File[] files = dir.listFiles();
+        if (files == null) return;
+        for (File f : files) {
+            if (f.isDirectory()) searchRec(f, q, sb, depth + 1);
+            else if (f.length() < 2_000_000 && readTextFile(f).contains(q)) sb.append(f.getAbsolutePath()).append("\n");
+        }
+    }
+
+    // ---------- MCP resources ----------
+
+    private JsonArray buildResourceList() {
+        JsonArray arr = new JsonArray();
+        File root = new File(Environment.getExternalStorageDirectory(), ".sketchware/mysc/list");
+        File[] dirs = root.listFiles();
+        if (dirs != null) {
+            for (File d : dirs) {
+                if (!d.isDirectory()) continue;
+                JsonObject r = new JsonObject();
+                r.addProperty("uri", "swp://project/" + d.getName());
+                r.addProperty("name", "Project: " + d.getName());
+                r.addProperty("description", "Sketchware Pro project context (resources, compile log)");
+                r.addProperty("mimeType", "text/plain");
+                arr.add(r);
+            }
+        }
+        return arr;
+    }
+
+    private JsonArray readResource(String uri) {
+        JsonArray arr = new JsonArray();
+        JsonObject c = new JsonObject();
+        c.addProperty("uri", uri);
+        c.addProperty("mimeType", "text/plain");
+        String text;
+        if (uri.startsWith("swp://project/")) {
+            text = AiProvider.getProjectContext(uri.substring("swp://project/".length()));
+        } else if (uri.startsWith("swp://file/")) {
+            text = readTextFile(new File(uri.substring("swp://file/".length())));
+        } else {
+            text = "Unknown resource URI: " + uri;
+        }
+        c.addProperty("text", text);
+        arr.add(c);
+        return arr;
+    }
+
+    // ---------- MCP prompts ----------
+
+    private JsonArray buildPromptList() {
+        JsonArray arr = new JsonArray();
+        arr.add(promptMeta("build_app", "Scaffold an app feature",
+                new String[][]{{"sc_id", "Project id", "true"}, {"feature", "Feature description", "true"}}));
+        arr.add(promptMeta("fix_error", "Diagnose & fix an error",
+                new String[][]{{"sc_id", "Project id", "true"}, {"error", "Error message or stack trace", "true"}}));
+        arr.add(promptMeta("explain_code", "Explain project code",
+                new String[][]{{"sc_id", "Project id", "true"}}));
+        return arr;
+    }
+
+    private JsonObject promptMeta(String name, String desc, String[][] args) {
+        JsonObject p = new JsonObject();
+        p.addProperty("name", name);
+        p.addProperty("description", desc);
+        JsonArray a = new JsonArray();
+        for (String[] arg : args) {
+            JsonObject o = new JsonObject();
+            o.addProperty("name", arg[0]);
+            o.addProperty("description", arg[1]);
+            o.addProperty("required", "true".equals(arg[2]));
+            a.add(o);
+        }
+        p.add("arguments", a);
+        return p;
+    }
+
+    private JsonArray getPromptMessages(JsonObject params) {
+        String name = params.has("name") ? params.get("name").getAsString() : "";
+        JsonObject args = params.has("arguments") && params.get("arguments").isJsonObject()
+                ? params.getAsJsonObject("arguments") : new JsonObject();
+        String text;
+        switch (name) {
+            case "build_app":
+                text = "Build this feature in Sketchware Pro project " + argStr(args, "sc_id") + ": "
+                        + argStr(args, "feature")
+                        + ". Provide the view XML layout, the event handler code, required components, "
+                        + "and any custom Java/Kotlin code.";
+                break;
+            case "fix_error":
+                text = "Fix this error in Sketchware Pro project " + argStr(args, "sc_id") + ":\n"
+                        + argStr(args, "error") + "\nProvide the corrected, compilable code.";
+                break;
+            case "explain_code":
+                text = "Explain the structure and code of Sketchware Pro project " + argStr(args, "sc_id") + ".";
+                break;
+            default:
+                text = "Unknown prompt: " + name;
+        }
+        JsonObject content = new JsonObject();
+        content.addProperty("type", "text");
+        content.addProperty("text", text);
+        JsonObject msg = new JsonObject();
+        msg.addProperty("role", "user");
+        msg.add("content", content);
+        JsonArray m = new JsonArray();
+        m.add(msg);
+        return m;
+    }
+
+    private static String argStr(JsonObject args, String key) {
+        return args.has(key) ? args.get(key).getAsString() : "";
     }
 
     // ---------- Helpers ----------
