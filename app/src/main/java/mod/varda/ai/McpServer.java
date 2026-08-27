@@ -93,12 +93,12 @@ public class McpServer {
         return AiProviderConfig.getMcpPort(ctx);
     }
 
-    private boolean isRunning() {
+    private boolean serverIsRunning() {
         return serverSocket != null && !serverSocket.isClosed();
     }
 
     private void acceptLoop() {
-        while (isRunning()) {
+        while (serverIsRunning()) {
             try {
                 Socket sock = serverSocket.accept();
                 sock.setSoTimeout(30000);
