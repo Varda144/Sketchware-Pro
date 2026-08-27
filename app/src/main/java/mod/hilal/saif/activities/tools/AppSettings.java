@@ -103,6 +103,12 @@ public class AppSettings extends BaseAppCompatActivity {
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_box, "Local library manager", "Manage and download local libraries", new ActivityLauncher(new Intent(getApplicationContext(), ManageLocalLibraryActivity.class), new Pair<>("sc_id", "system"))), true);
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_article, Helper.getResString(R.string.design_drawer_menu_title_logcat_reader), Helper.getResString(R.string.design_drawer_menu_subtitle_logcat_reader), new ActivityLauncher(new Intent(getApplicationContext(), LogReaderActivity.class))), false);
 
+        LibraryCategoryView aiCategory = new LibraryCategoryView(this);
+        aiCategory.setTitle("AI & MCP");
+        preferences.add(aiCategory);
+
+        aiCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_star, "AI Provider & MCP", "Configure Gemini/OpenAI providers and secure API key for AI-assisted block generation", openSettingsActivity(SettingsActivity.AI_SETTINGS_FRAGMENT)), true);
+
         LibraryCategoryView generalCategory = new LibraryCategoryView(this);
         generalCategory.setTitle("General");
         preferences.add(generalCategory);
