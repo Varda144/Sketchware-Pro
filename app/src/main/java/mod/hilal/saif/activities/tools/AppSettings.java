@@ -45,6 +45,7 @@ import pro.sketchware.R;
 import pro.sketchware.activities.editor.component.ManageCustomComponentActivity;
 import pro.sketchware.activities.settings.SettingsActivity;
 import pro.sketchware.ai.chat.AiChatActivity;
+import pro.sketchware.ai.chat.AiChatActivity;
 import pro.sketchware.databinding.ActivityAppSettingsBinding;
 import pro.sketchware.databinding.DialogSelectApkToSignBinding;
 import pro.sketchware.utility.FileUtil;
@@ -109,6 +110,7 @@ public class AppSettings extends BaseAppCompatActivity {
         preferences.add(aiCategory);
 
         aiCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_star, "AI Provider & MCP", "All AI features: configure Gemini/OpenAI providers, secure API key, AI-assisted block generation and the MCP integration", openSettingsActivity(SettingsActivity.AI_SETTINGS_FRAGMENT)), true);
+        aiCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_star, "AI Chat", "Open the built-in AI assistant chat (uses the configured provider)", v -> AiChatActivity.open(v.getContext(), null, null)), true);
         aiCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_chat, "AI Chat", "Chat with the AI assistant from the main screen", v -> AiChatActivity.open(this, null, null)), true);
 
         LibraryCategoryView generalCategory = new LibraryCategoryView(this);

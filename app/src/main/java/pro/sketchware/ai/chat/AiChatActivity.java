@@ -21,6 +21,7 @@ import pro.sketchware.ai.AiModels;
 import pro.sketchware.ai.AiProviderRegistry;
 import pro.sketchware.ai.GeminiApiService;
 import pro.sketchware.ai.provider.AiProvider;
+import pro.sketchware.R;
 import pro.sketchware.databinding.ActivityAiChatBinding;
 import pro.sketchware.databinding.ItemAiChatMessageBinding;
 
@@ -168,7 +169,7 @@ public final class AiChatActivity extends BaseAppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         binding = null;
         super.onDestroy();
     }

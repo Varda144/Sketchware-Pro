@@ -26,7 +26,7 @@ import pro.sketchware.ai.secure.AiSecureStore;
  *
  * Endpoint: POST {base}/chat/completions with "Authorization: Bearer KEY".
  */
-public final class OpenAiCompatibleProvider implements AiProvider {
+public class OpenAiCompatibleProvider implements AiProvider {
 
     public static final String ID = "openai_compatible";
     private static final String DEFAULT_BASE = "https://api.openai.com/v1";
