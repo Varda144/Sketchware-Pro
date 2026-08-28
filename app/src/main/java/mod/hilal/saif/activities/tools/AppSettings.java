@@ -105,10 +105,10 @@ public class AppSettings extends BaseAppCompatActivity {
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_article, Helper.getResString(R.string.design_drawer_menu_title_logcat_reader), Helper.getResString(R.string.design_drawer_menu_subtitle_logcat_reader), new ActivityLauncher(new Intent(getApplicationContext(), LogReaderActivity.class))), false);
 
         LibraryCategoryView aiCategory = new LibraryCategoryView(this);
-        aiCategory.setTitle("AI & MCP");
+        aiCategory.setTitle("Expo GO");
         preferences.add(aiCategory);
 
-        aiCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_star, "AI Provider & MCP", "Configure Gemini/OpenAI providers and secure API key for AI-assisted block generation", openSettingsActivity(SettingsActivity.AI_SETTINGS_FRAGMENT)), true);
+        aiCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_star, "AI Provider & MCP", "All AI features: configure Gemini/OpenAI providers, secure API key, AI-assisted block generation and the MCP integration", openSettingsActivity(SettingsActivity.AI_SETTINGS_FRAGMENT)), true);
         aiCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_chat, "AI Chat", "Chat with the AI assistant from the main screen", v -> AiChatActivity.open(this, null, null)), true);
 
         LibraryCategoryView generalCategory = new LibraryCategoryView(this);
