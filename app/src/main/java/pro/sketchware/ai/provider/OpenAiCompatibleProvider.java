@@ -85,6 +85,7 @@ public final class OpenAiCompatibleProvider implements AiProvider {
             return;
         }
         String model = store.getModel(ID, defaultModel());
+        String base = store.getBaseUrl(ID, baseUrl);
         JSONArray messages = new JSONArray();
         for (AiModels.Message message : request.messages) {
             try {
@@ -112,7 +113,7 @@ public final class OpenAiCompatibleProvider implements AiProvider {
         } catch (Exception ignored) {
         }
         Request httpRequest = new Request.Builder()
-                .url(baseUrl + "/chat/completions")
+                .url(base + "/chat/completions")
                 .header("Authorization", "Bearer " + apiKey)
                 .post(RequestBody.create(body.toString(), JSON))
                 .build();

@@ -2057,6 +2057,10 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
 
         if (itemId == R.id.menu_logic_generate) {
             showGenerateFromTextDialog();
+        } else if (itemId == R.id.menu_logic_chat) {
+            String contextHint = "activity: " + M.getJavaName() + ", event: "
+                    + eventName + ", project sc_id: " + scId;
+            pro.sketchware.ai.chat.AiChatActivity.open(this, scId, contextHint);
         } else if (itemId == R.id.menu_block_helper) {
             e(false);
             g(!ia);

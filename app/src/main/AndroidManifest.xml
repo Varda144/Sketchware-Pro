@@ -46,6 +46,10 @@
             android:name="com.besome.sketch.common.SrcViewerActivity"
             android:configChanges="orientation|screenSize" />
         <activity
+            android:name="pro.sketchware.ai.chat.AiChatActivity"
+            android:configChanges="orientation|screenSize"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name="pro.sketchware.activities.importicon.ImportIconActivity"
             android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="stateHidden" />

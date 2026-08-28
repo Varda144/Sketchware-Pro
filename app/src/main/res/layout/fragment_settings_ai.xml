@@ -50,6 +50,12 @@
                     android:text="Google Gemini" />
 
                 <RadioButton
+                    android:id="@+id/provider_bynara"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="byNara (bynara.id) - OpenAI-compatible hosted service" />
+
+                <RadioButton
                     android:id="@+id/provider_openai_compatible"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -60,6 +66,21 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:hint="Base URL"
+                app:helperText="Custom endpoint for OpenAI-compatible providers; leave empty for the provider default">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/input_base_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textUri"
+                    android:singleLine="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:hint="Model name"
                 app:helperText="Leave empty for the provider default">
 

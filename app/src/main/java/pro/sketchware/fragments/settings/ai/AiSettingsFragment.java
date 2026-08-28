@@ -77,6 +77,9 @@ public class AiSettingsFragment extends qA {
     }
 
     private AiProvider selectedProvider() {
+        if (binding.providerBynara.isChecked()) {
+            return AiProviderRegistry.byId(requireContext(), "bynara");
+        }
         return AiProviderRegistry.byId(requireContext(),
                 binding.providerOpenaiCompatible.isChecked()
                         ? "openai_compatible"
@@ -86,11 +89,14 @@ public class AiSettingsFragment extends qA {
     private void loadState() {
         AiSecureStore store = AiSecureStore.get(requireContext());
         AiProvider active = AiProviderRegistry.active(requireContext());
-        if ("openai_compatible".equals(active.id())) {
+        if ("bynara".equals(active.id())) {
+            binding.providerBynara.setChecked(true);
+        } else if ("openai_compatible".equals(active.id())) {
             binding.providerOpenaiCompatible.setChecked(true);
         } else {
             binding.providerGemini.setChecked(true);
         }
+        binding.inputBaseUrl.setText(store.getBaseUrl(active.id(), ""));
         binding.inputModel.setText(store.getModel(active.id(), ""));
         updateKeyStatus();
         if (!store.isEncrypted()) {
@@ -112,6 +118,7 @@ public class AiSettingsFragment extends qA {
         binding.providerGroup.setOnCheckedChangeListener((group, checkedId) -> {
             AiProvider provider = selectedProvider();
             AiSecureStore store = AiSecureStore.get(requireContext());
+            binding.inputBaseUrl.setText(store.getBaseUrl(provider.id(), ""));
             binding.inputModel.setText(store.getModel(provider.id(), ""));
             binding.inputApiKey.setText("");
             updateKeyStatus();
@@ -145,6 +152,9 @@ public class AiSettingsFragment extends qA {
         store.setModel(provider.id(),
                 binding.inputModel.getText() == null ? ""
                         : binding.inputModel.getText().toString().trim());
+        store.setBaseUrl(provider.id(),
+                binding.inputBaseUrl.getText() == null ? ""
+                        : binding.inputBaseUrl.getText().toString().trim());
         AiProviderRegistry.setActive(requireContext(), provider.id());
         binding.inputApiKey.setText("");
         updateKeyStatus();

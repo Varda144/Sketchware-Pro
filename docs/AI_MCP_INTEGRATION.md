@@ -13,9 +13,13 @@ Settings (AI Provider)
         ▼
 AiProviderRegistry ──► AiProvider interface
         ├── GeminiProvider            (generativelanguage REST via OkHttp)
-        └── OpenAiCompatibleProvider  (chat/completions; OpenAI/OpenRouter/local)
+        ├── OpenAiCompatibleProvider  (chat/completions; editable base URL)
+        ├── BynaraProvider            (byNara preset → https://bynara.id/v1)
+        └── per-provider base URL / model / API key in AiSecureStore
         │
 GeminiApiService  (facade: generateText / chat, fully async)
+        │
+AiChatActivity  (multi-turn assistant chat: main screen + inside every project) │
         │
 GeminiNLToBlocksConverter ── NLPlanValidator (strict schema v1) ── BlockCatalog
         │                                        only catalog-verified ops pass
@@ -60,6 +64,27 @@ See [`mcp-server/README.md`](../mcp-server/README.md). Desktop-only module;
 grouped tools (`project.*`, `view.*`, `source.*`, `manifest.*`,
 `snapshot.*`, ...) operate on real `.sketchware` files with a workspace
 boundary, atomic writes + backups, and read-only-by-default permissions.
+
+### AI Chat
+
+`AiChatActivity` provides a multi-turn assistant chat routed through the
+currently-active provider:
+
+* **Main screen** — opened from *App settings → AI & MCP → AI Chat*.
+* **Inside every project** — opened from the Logic (block) editor via the
+  **AI Chat** toolbar item, which attaches the current activity/event as
+  project context so the AI can answer about the open project.
+
+Conversation history is kept in memory for the session; the system message
+always pins the active provider and (when present) the project context.
+
+### Custom providers & base URLs
+
+Each provider stores its own API key, model and, for OpenAI-compatible
+providers, a **custom base URL** in `AiSecureStore`. A **byNara
+(bynara.id)** preset is registered out of the box (`https://bynara.id/v1`),
+and any "OpenAI-compatible endpoint" can be pointed at any OpenAI-compatible
+host (OpenAI, OpenRouter, LM Studio, local vLLM, ...) by editing its base URL.
 
 ## Secure key storage
 

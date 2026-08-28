@@ -27,6 +27,7 @@ public final class AiSecureStore {
     private static final String KEY_PROVIDER = "active_provider";
     private static final String KEY_MODEL_PREFIX = "model_";
     private static final String KEY_API_KEY_PREFIX = "api_key_";
+    private static final String KEY_BASE_URL_PREFIX = "base_url_";
 
     private static final AtomicReference<AiSecureStore> INSTANCE = new AtomicReference<>();
 
@@ -91,6 +92,34 @@ public final class AiSecureStore {
     @Nullable
     public String getModel(@NonNull String providerId, @NonNull String fallback) {
         return prefs.getString(KEY_MODEL_PREFIX + providerId, fallback);
+    }
+
+    /**
+     * Stores the (Optional) custom base URL for a provider, e.g. a self-hosted
+     * or third-party OpenAI-compatible endpoint such as {@code https://bynara.id/v1}.
+     * Empty or null input clears the entry so the provider default is used.
+     */
+    public void setBaseUrl(@NonNull String providerId, @Nullable String baseUrl) {
+        String key = KEY_BASE_URL_PREFIX + providerId;
+        if (baseUrl == null || baseUrl.trim().isEmpty()) {
+            prefs.edit().remove(key).apply();
+        } else {
+            String cleaned = baseUrl.trim();
+            if (cleaned.endsWith("/")) {
+                cleaned = cleaned.substring(0, cleaned.length() - 1);
+            }
+            prefs.edit().putString(key, cleaned).apply();
+        }
+    }
+
+    /**
+     * @return the configured custom base URL for a provider, or {@code fallback}
+     * when none is set.
+     */
+    @NonNull
+    public String getBaseUrl(@NonNull String providerId, @NonNull String fallback) {
+        String v = prefs.getString(KEY_BASE_URL_PREFIX + providerId, null);
+        return v == null || v.isEmpty() ? fallback : v;
     }
 
     /**

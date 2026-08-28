@@ -9,6 +9,13 @@
         app:showAsAction="always" />
 
     <item
+        android:id="@+id/menu_logic_chat"
+        android:icon="@drawable/ic_mtrl_chat"
+        android:orderInCategory="91"
+        android:title="AI Chat"
+        app:showAsAction="always" />
+
+    <item
         android:id="@+id/menu_logic_showsource"
         android:icon="@drawable/ic_mtrl_code"
         android:orderInCategory="100"

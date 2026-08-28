@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import pro.sketchware.ai.provider.AiProvider;
+import pro.sketchware.ai.provider.BynaraProvider;
 import pro.sketchware.ai.provider.GeminiProvider;
 import pro.sketchware.ai.provider.OpenAiCompatibleProvider;
 import pro.sketchware.ai.secure.AiSecureStore;
@@ -75,6 +76,7 @@ public final class AiProviderRegistry {
                 providers = new LinkedHashMap<>();
                 register(new GeminiProvider(app));
                 register(new OpenAiCompatibleProvider(app));
+                register(new BynaraProvider(app));
             }
         }
     }
